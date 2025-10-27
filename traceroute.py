@@ -1,8 +1,16 @@
-""" Usage: traceroute.py -s <vantage point IP> -c <censored keyword> -u <uncensored keyword> [--https] [--outfile <filename>]
+""" 
+
+BASIC CLI USAGE
+
+Usage: traceroute.py -s <vantage point IP> -c <censored keyword> -u <uncensored keyword> [--https] [--outfile <filename>]
+
 
 Launches increasing-TTL probes with both censored and uncensored keywords.
 If https is set, launches HTTPS probes pre-recorded TLS ClientHello.
 Otherwise launches HTTP probe with keyword as HTTP Host header.
+
+
+FILE BASED USAGE
 
 To read from file, can run:
   probe.py -f <filepath> -u <uncensored keyword [--https] [--outfile <filename>]
@@ -14,6 +22,119 @@ For instance:
 
 If outfile is not provided, results are written to stdout.
 """
+
+# the idea for the traceroute here is that we 
+# have a -s [vantage point ip] that basically refers to the server we have that is going to be where we send the probes
+# we can add keywords that are censored / uncensored to the host header 
+
+# this is unlike the normal process of dns lookup, and then visit
+# NOTE It allows you to detect censorship triggered by the domain keyword, not by the destination IP.*
+
+
+"""
+| Concept                                 | Example              | Meaning                               |
+| --------------------------------------- | -------------------- | ------------------------------------- |
+| **Vantage point**                       | Your VM in Rochester | Where probes originate                |
+| **Target IP (server_ip)**               | 1.1.1.1              | Destination all probes go to          |
+| **Test domain (censored_keyword)**      | facebook.com         | Keyword suspected of being blocked    |
+| **Control domain (uncensored_keyword)** | example.com          | Safe baseline keyword                 |
+| **Difference = censorship evidence**    | Only test gets RST   | Likely keyword-triggered interference |
+
+
+"""
+
+"""
+the file based usage doc string is wrong
+
+FILE BASED USAGE
+
+To read from file, can run:
+  traceroute.py -f <filepath> -u <uncensored keyword [--https] [--outfile <filename>]
+
+File should be a CSV with the server IP in the first column and the censored keyword in the second.
+the ases is optional it is only used to batch measurements and send them so in simulation we will not use them
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+NOTE THE UNCENSORED KEYWORD THAT IS PASSED IS THE CONTROL DOMAIN IT WILL ACT AS A REFERENCE TO COMPARE WITH EACH MEASUREMENT LINE IN THE INPUT 
+so it is a single keyword that is passed in the usage even with the file as the input 
+
+For instance:
+  1.2.3.4, facebook.com, AS1
+  5.6.7.8, nytimes.com, AS2
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+  
+NOTE two imp points 
+
+1) If https is set, launches HTTPS probes pre-recorded TLS ClientHello.
+Otherwise launches HTTP probe with keyword as HTTP Host header.
+
+explanation : 
+
+2) If outfile is not provided, results are written to stdout.
+
+explanation : -----
+
+"""
+
+
+"""
+| Concept                        | **HTTP mode (`--https` off)**                                                   | **HTTPS mode (`--https` on)**                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Port used**                  | TCP **80**                                                                      | TCP **443**                                                                             |
+| **Payload content**            | **Plain text** (readable) — e.g. `GET / HTTP/1.1\r\nHost: facebook.com\r\n\r\n` | **Binary TLS handshake** — e.g. `ClientHello` message containing **SNI = facebook.com** |
+| **Keyword location**           | In **HTTP Host header**                                                         | In **TLS SNI (Server Name Indication)** extension                                       |
+| **Visibility to network**      | Everyone along the path (ISP, firewall, censor) can read the payload text       | Only the **ClientHello** handshake is readable; after that, everything is encrypted     |
+| **What censorship can key on** | Exact domain name string or keywords inside plain text                          | The **SNI field** (domain name before encryption) or TLS fingerprint                    |
+| **Expected server response**   | HTTP 200 OK / 301 redirect / etc.                                               | TLS handshake continuation (`ServerHello`, `Certificate`, etc.)                         |
+| **End of handshake meaning**   | You see an HTTP response                                                        | You see a valid TLS response (ServerHello / Certificate)                                |
+
+"""
+
+"""
+| Priority | Response Type | Meaning                                               |
+| -------- | ------------- | ----------------------------------------------------- |
+| 1️⃣      | ICMP_TTL      | Router sent “TTL expired” — hop in path               |
+| 2️⃣      | ICMP_OTHER    | Some other ICMP message (unreachable, etc.)           |
+| 3️⃣      | TLS           | Application-level TLS message (ServerHello, etc.)     |
+| 4️⃣      | HTTP          | Application-level HTTP message (blockpage or success) |
+| 5️⃣      | RST           | TCP Reset — connection forcibly closed                |
+| 6️⃣      | FIN           | TCP normal close                                      |
+| 7️⃣      | ACK           | TCP acknowledgement only (no data)                    |
+
+"""
+
+
+"""
+
+simulation steps: 
+
+1) we will use the file based method
+
+2) server ip will be 
+s7042@ElasticsearchCourse:~$ # 1) resolve
+IP=$(dig +short baidu.com | head -n1); echo "IP=$IP"
+
+# test ports
+nc -vz $IP 443
+nc -vz $IP 80
+
+# test TLS/SNI
+echo | openssl s_client -servername example.com -connect $IP:443 -brief -ign_eofIP=220.181.7.203
+Connection to 220.181.7.203 443 port [tcp/https] succeeded!
+Connection to 220.181.7.203 80 port [tcp/http] succeeded!
+
+since it is in china we expect some app keyword censorship
+
+
+3) make the file with as0 as ase , as dont need it to group for simulation as of now
+
+4) 220.181.7.203 baidu owned chinese address will be our server ip
+
+
+"""
+
 
 from abc import ABC, abstractmethod
 import csv
@@ -478,7 +599,7 @@ def cli_file(filename, uncensored, https=False, iprr = False, verbose = False, c
     with open(filename) as csvfile:
         filereader = csv.reader(csvfile)
 
-        #Before measurements, store in memory the set of measurements to be conducted in each round,  
+        #   Before measurements, store in memory the set of measurements to be conducted in each round,  
         ases = {}
         schedule = {}
         for row in filereader:
@@ -498,6 +619,8 @@ def cli_file(filename, uncensored, https=False, iprr = False, verbose = False, c
                     break
                 else:
                     loopVar += 1
+
+
         for measurement_count, measurement_dict in schedule.items():
             sys.stderr.write("Measurement Round: " + str(measurement_count) + "\r")
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor: 
@@ -505,7 +628,11 @@ def cli_file(filename, uncensored, https=False, iprr = False, verbose = False, c
                 jobs = {}
                 while len(measurement_dict) > 0:
                     for server_ip, censored_keyword in measurement_dict.items():
-                        future_to_cli = executor.submit(cli, server_ip, censored_keyword, uncensored, https, iprr, verbose, comparequoted, tracebox, rate, save_pcaps, pcap_dir, iface, consistent_runs, max_iterations)
+                        future_to_cli = executor.submit(cli, 
+                                                        server_ip, 
+                                                        censored_keyword, 
+                                                        uncensored, https, 
+                                                        iprr, verbose, comparequoted, tracebox, rate, save_pcaps, pcap_dir, iface, consistent_runs, max_iterations)
                         jobs[future_to_cli] = server_ip
                         #Break if too many jobs are assigned. More jobs can be assigned to all workers when current set is done. 
                         if len(jobs) > MAX_JOBS_IN_QUEUE:
@@ -532,11 +659,22 @@ def cli_file(filename, uncensored, https=False, iprr = False, verbose = False, c
 
 
 if __name__ == "__main__":
+    
+    # entry point 
+    # argument parser 
     parser = argparse.ArgumentParser()
+
+    # keyword here refers to the domain name 
     parser.add_argument("-c", "--censored_keyword", type=str)
     parser.add_argument("-u", "--uncensored_keyword", type=str)
     parser.add_argument("-s", "--server_ip", type=str)
+
+    # store true if the https flag is present else default to http
+    # NOTE THAT HERE WE ONLY HAVE 2 OPTIONS HTTPS AND HTTP
     parser.add_argument("--https", action="store_true")
+
+
+    # ---------------------- other custom flags that are there to add more details / steps to the tool ------------------------
     #Flag for verbose output which prints packets
     parser.add_argument("-v","--verbose", action="store_true")
     #Flag for setting whether to send record route in IP header
@@ -563,18 +701,25 @@ if __name__ == "__main__":
     parser.add_argument("-an", "--asnames_file", type=str)
     parser.set_defaults(https=False, verbose=False, iprr=False, comparequoted=False, tracebox=False, filename="", server_ip="", outfile="",verbosefile="",max_threads=1, rate=3, save_pcaps=False, pcap_dir="pcaps", interface=None, separation=120, uncensored_keyword=DEFAULT_UNCENSORED_KEYWORD, consistent_runs=5,max_iterations=11,routeviews_file="",asnames_file="")
 
+    # parse the arguments read and store them 
     args = parser.parse_args()
 
+    # asn db in our simulation we probably will not be using
     global ASNDB 
     ASNDB = asn.init(args.routeviews_file, args.asnames_file)
 
-    stdout = sys.stdout
+    # based on the argument provided if we have an outfile, we will write to the outfile provided
+    # also if verbose 
+    stdout = sys.stdout # standard terminal output default if none args specified
     if args.outfile:
         stdout = open(args.outfile, "w")
     stderr = sys.stderr
     if args.verbosefile:
         stderr = open(args.verbosefile,"w")
 
+
+    # the pcap files will be put in pcaps directory by default if not specified
+    # otherwise we will put it or make a the directory specified by the arg : pcap_dir
     timestr = datetime.now().strftime("%Y_%m_%d")
     pcap_dir = "pcaps"
     if args.pcap_dir:
@@ -582,6 +727,8 @@ if __name__ == "__main__":
     if not os.path.exists(pcap_dir):
         os.makedirs(pcap_dir)
 
+    
+    # for the simulation we will not be using tracebox
     if args.tracebox:
         try:
             tracebox_run = subprocess.run(["sudo","tracebox","-V"], capture_output=True)
@@ -594,27 +741,75 @@ if __name__ == "__main__":
                 sys.stderr.write("Error: " + str(e))
                 sys.stderr.write("Continuing without tracebox\n")
                 args.tracebox = False
+    
+    
     try:
+    
       if args.server_ip:
+
+        # simple case : 
+        # Usage: traceroute.py -s <vantage point IP> -c <censored keyword> -u <uncensored keyword> [--https] [--outfile <filename>]
+        # use cli function 
+
         if not args.censored_keyword:
           logging.error("Need to provide --censored_keyword to test probe with.")
           sys.exit(1)
-        output, verbose_output = cli(args.server_ip, args.censored_keyword, args.uncensored_keyword, args.https, args.iprr, args.verbose, args.comparequoted, args.tracebox, args.rate, args.save_pcaps, pcap_dir, args.interface, args.consistent_runs, args.max_iterations)
+        output, verbose_output = cli(args.server_ip, 
+                                     args.censored_keyword, 
+                                     args.uncensored_keyword, 
+                                     args.https, 
+                                     args.iprr, 
+                                     args.verbose, 
+                                     args.comparequoted, 
+                                     args.tracebox, 
+                                     args.rate, 
+                                     args.save_pcaps, 
+                                     pcap_dir, 
+                                     args.interface, 
+                                     args.consistent_runs, 
+                                     args.max_iterations)
+        
+        # result writing 
         if args.verbose:
             stderr.write(verbose_output)
             stderr.flush()
 
         stdout.write(output)
         stdout.flush()
+
       elif args.filename:
-        cli_file(args.filename, args.uncensored_keyword, args.https, args.iprr, args.verbose, args.comparequoted, args.tracebox, args.rate, args.separation, args.max_threads, args.save_pcaps, pcap_dir, args.interface, args.consistent_runs, args.max_iterations, stdout, stderr)
+        # reading from the filename 
+        # using the cli_file function 
+        cli_file(args.filename, 
+                 args.uncensored_keyword, 
+                 args.https, 
+                 args.iprr, 
+                 args.verbose, 
+                 args.comparequoted, 
+                 args.tracebox, 
+                 args.rate, 
+                 args.separation, 
+                 args.max_threads, 
+                 args.save_pcaps, 
+                 pcap_dir, 
+                 args.interface, 
+                 args.consistent_runs, 
+                 args.max_iterations, 
+                 stdout, 
+                 stderr)
+      
       else:
+        # invalid option
         logging.error("Need to provide either --server_ip or --filename.")
         sys.exit(1)
+    
     finally:
+      # always executes, cleanup code 
       if args.outfile:
+        # close outfile and verbose file 
         stdout.close()
       if args.verbosefile:
         stderr.close()
+      # allow background sniffer task to complete 
       time.sleep(120) # sleep 2 x sniffer delay time
     sys.exit(0)
