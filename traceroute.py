@@ -706,7 +706,8 @@ if __name__ == "__main__":
 
     # asn db in our simulation we probably will not be using
     global ASNDB 
-    ASNDB = asn.init(args.routeviews_file, args.asnames_file)
+    # ASNDB = asn.init(args.routeviews_file, args.asnames_file)
+    ASNDB = None   
 
     # based on the argument provided if we have an outfile, we will write to the outfile provided
     # also if verbose 
