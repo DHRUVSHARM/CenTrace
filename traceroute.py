@@ -495,7 +495,8 @@ class HTTPSProbe(TTLProbe):
 def _probe_result_to_as(result):
   hop, src_ip, _, _, _ = result
   if src_ip is not None:
-    ip_asn = asn.lookup(ASNDB, src_ip)
+    # ip_asn = asn.lookup(ASNDB, src_ip)
+    ip_asn = ("AS0", None) if ASNDB is None else asn.lookup(ASNDB, src_ip)
     if ip_asn == None or str(ip_asn[0]) == "None":
       return None
     else:

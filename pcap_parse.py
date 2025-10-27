@@ -22,6 +22,15 @@ from scapy.all import *
 import logging
 
 import asn
+from typing import List, Optional, Dict, Set, Tuple
+
+def safe_as_lookup(db, ip: Optional[str]):
+    if not ip or db is None:
+        return ""  # empty cell in CSV when skipping ASN
+    try:
+        return asn.lookup(db, ip) or ""
+    except Exception:
+        return ""
 
 
 load_layer("http")
@@ -659,11 +668,19 @@ def _probes_differ(probe1, probe2):
     return True, _abbreviate(payload1), _abbreviate(payload2)
 
 
+"""
 def main_file(filename, stdout):
     probes = Probes.from_pcap(filename)
     for ttl, probe in probes.items():
         stdout.write("\n".join([f"{ttl}: {p}" for p in probe.summary()]) + "\n")
+"""
 
+def main_file(filename, stdout):
+    probes = Probes.from_pcap(filename)
+    for ttl in probes.ttls():
+        stdout.write("\n".join([f"{ttl}: {p}" for p in probes.get(ttl).summary()]) + "\n")
+
+        
 def _set_default(obj):
     if isinstance(obj, set):
         return list(obj)
@@ -702,7 +719,7 @@ def main_dir(dirname, prefix, summary, stdout, cached=None):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), dirname)
     probes = {}
     many_probes_per_sample = False
-    for filename in glob(os.path.join(dirname, f"{prefix}*.pcap")):
+    for filename in glob.glob(os.path.join(dirname, f"{prefix}*.pcap")):
         parts = os.path.basename(filename).split("_")
         if len(parts) == 3:
             ip, censored, tested = parts
@@ -751,9 +768,12 @@ def main_dir(dirname, prefix, summary, stdout, cached=None):
                 result.control_payload,
                 result.censored_payload,
                 result.on_path,
-                result.middlebox_before, asn.lookup(ASNDB, result.middlebox_before),
-                result.middlebox, asn.lookup(ASNDB, result.middlebox),
-                result.middlebox_after, asn.lookup(ASNDB, result.middlebox_after),
+                # result.middlebox_before, asn.lookup(ASNDB, result.middlebox_before),
+                # result.middlebox, asn.lookup(ASNDB, result.middlebox),
+                # result.middlebox_after, asn.lookup(ASNDB, result.middlebox_after),
+                result.middlebox_before, safe_as_lookup(ASNDB, result.middlebox_before),
+                result.middlebox,       safe_as_lookup(ASNDB, result.middlebox),
+                result.middlebox_after, safe_as_lookup(ASNDB, result.middlebox_after),
                 json.dumps(result.rrs_censored, default=_set_default),
                 json.dumps(result.rrs_uncensored, default=_set_default),
                 json.dumps(result.censored_terminating_features),
@@ -783,8 +803,13 @@ if __name__ == "__main__":
     parser.set_defaults(dir=None, file=None, file2=None, outfile=None, prefix="", summary=False, cached=None)
     args = parser.parse_args()
 
-    global ASNDB 
-    ASNDB = asn.init(args.routeviews_file, args.asnames_file)
+    global ASNDB
+    ASNDB = None
+    try:
+        if args.routeviews_file and args.asnames_file:
+            ASNDB = asn.init(args.routeviews_file, args.asnames_file)
+    except Exception:
+        ASNDB = None  # fall back to skipping ASN if anything fails
 
     if (args.dir and args.file) or not (args.dir or args.file):
         logging.error("Must provide at least one --dir or --file, but not both.")
