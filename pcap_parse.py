@@ -719,7 +719,7 @@ def main_dir(dirname, prefix, summary, stdout, cached=None):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), dirname)
     probes = {}
     many_probes_per_sample = False
-    for filename in glob.glob(os.path.join(dirname, f"{prefix}*.pcap")):
+    for filename in glob(os.path.join(dirname, f"{prefix}*.pcap")):
         parts = os.path.basename(filename).split("_")
         if len(parts) == 3:
             ip, censored, tested = parts
