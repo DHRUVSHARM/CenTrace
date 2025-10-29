@@ -1,0 +1,73 @@
+('172.253.118.106', 'albuteroltab.com')
+ 0 |         TIMEOUT          |         TIMEOUT         
+ 1 |         TIMEOUT          |         TIMEOUT         
+ 2 |  129.21.8.126 ICMP_TTL   |  129.21.8.126 ICMP_TTL  
+ 3 |  199.109.111.9 ICMP_TTL  |  199.109.111.9 ICMP_TTL 
+ 4 | 199.109.107.213 ICMP_TTL | 199.109.107.213 ICMP_TTL
+ 5 | 199.109.107.145 ICMP_TTL | 199.109.107.145 ICMP_TTL
+ 6 | 199.109.107.142 ICMP_TTL | 199.109.107.142 ICMP_TTL
+ 7 | 199.109.107.118 ICMP_TTL | 199.109.107.118 ICMP_TTL
+ 8 |  72.14.202.166 ICMP_TTL  |  72.14.202.166 ICMP_TTL 
+ 9 | 142.251.225.85 ICMP_TTL  | 142.251.225.89 ICMP_TTL 
+10 | 192.178.106.18 ICMP_TTL  | 192.178.108.18 ICMP_TTL 
+11 |  216.239.56.17 ICMP_TTL  | 172.253.53.157 ICMP_TTL 
+12 | 216.239.57.196 ICMP_TTL  |  142.251.69.71 ICMP_TTL 
+13 | 142.250.213.62 ICMP_TTL  | 142.250.213.60 ICMP_TTL 
+14 | 142.250.224.59 ICMP_TTL  | 142.250.63.139 ICMP_TTL 
+15 | 142.250.59.226 ICMP_TTL  | 216.239.63.170 ICMP_TTL 
+16 | 192.178.108.169 ICMP_TTL |  192.178.108.9 ICMP_TTL 
+17 | 142.251.252.39 ICMP_TTL  | 209.85.245.232 ICMP_TTL 
+18 | 172.253.68.221 ICMP_TTL  | 172.253.68.143 ICMP_TTL 
+19 |         TIMEOUT          |         TIMEOUT         
+20 |         TIMEOUT          |         TIMEOUT         
+21 |         TIMEOUT          |         TIMEOUT         
+22 |         TIMEOUT          |         TIMEOUT         
+23 |         TIMEOUT          |         TIMEOUT         
+24 |         TIMEOUT          |         TIMEOUT         
+25 |         TIMEOUT          |         TIMEOUT         
+26 |         TIMEOUT          |         TIMEOUT         
+27 |         TIMEOUT          |         TIMEOUT         
+28 |   172.253.118.106 ACK    |   172.253.118.106 ACK   
+   |   172.253.118.106 ACK    |   172.253.118.106 ACK   
+   |   172.253.118.106 TLS    |   172.253.118.106 TLS   
+   |   172.253.118.106 TLS    |   172.253.118.106 TLS   
+29 |         UNKNOWN          |         TIMEOUT         
+30 |         UNKNOWN          |   172.253.118.106 ACK   
+   |                          |   172.253.118.106 ACK   
+   |                          |   172.253.118.106 TLS   
+   |                          |   172.253.118.106 TLS   
+31 |         UNKNOWN          |                         
+32 |         UNKNOWN          |                         
+33 |         UNKNOWN          |                         
+34 |         UNKNOWN          |                         
+35 |         UNKNOWN          |                         
+36 |         UNKNOWN          |                         
+37 |         UNKNOWN          |                         
+38 |         UNKNOWN          |                         
+39 |         UNKNOWN          |                         
+40 |         UNKNOWN          |                         
+41 |         UNKNOWN          |                         
+42 |         UNKNOWN          |                         
+43 |         UNKNOWN          |                         
+44 |         UNKNOWN          |                         
+45 |         UNKNOWN          |                         
+46 |         UNKNOWN          |                         
+47 |         UNKNOWN          |                         
+48 |         UNKNOWN          |                         
+49 |         UNKNOWN          |                         
+50 |         UNKNOWN          |                         
+51 |         UNKNOWN          |                         
+52 |         UNKNOWN          |                         
+53 |         UNKNOWN          |                         
+54 |         UNKNOWN          |                         
+55 |         UNKNOWN          |                         
+56 |         UNKNOWN          |                         
+57 |         UNKNOWN          |                         
+58 |         UNKNOWN          |                         
+59 |         UNKNOWN          |                         
+60 |         UNKNOWN          |                         
+61 |         UNKNOWN          |                         
+62 |         UNKNOWN          |                         
+63 |         UNKNOWN          |                         
+64 |         TIMEOUT          |                         
+NO_OBSERVED_CENSORSHIP

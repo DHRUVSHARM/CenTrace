@@ -17,3 +17,5 @@ results_*/      # results_pcaps_http/, results_pcaps_https/
 
 # misc
 *.tmp
+.venv/
+.venv/
